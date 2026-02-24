@@ -20,22 +20,22 @@ Before running the project, ensure you have the following installed:
 * Python 3.9+
 
 ⚙️ Installation & Setup
+
+
 Clone the repository:
-
-
-
 git clone https://github.com/mohiuddin1221/Transcription_Application.git
-cd transcription-app
+cd Transcription_Application
 
 
 Create a Virtual Environment:
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate 
+On Windows: venv\Scripts\activate
+
+
 Install Dependencies:
-
-
 pip install -r requirements.txt
+
+
 Run the Server:
-
-
 uvicorn main:app --reload
