@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Audio Test</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding-top: 50px; background: #f0f2f5; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 450px; text-align: center; }
+        h2 { color: #333; margin-bottom: 20px; }
+        #status { margin-bottom: 25px; font-weight: bold; padding: 10px; border-radius: 5px; }
+        .online { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .offline { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        #result { margin-top: 25px; padding: 15px; background: #ffffff; border: 1px solid #ddd; border-radius: 8px; text-align: left; font-size: 15px; white-space: pre-wrap; min-height: 100px; color: #444; }
+        button { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        input[type="file"] { margin: 15px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Audio Transcription Test</h2>
+    <div id="status" class="offline">Status: Disconnected</div>
+    
+    <input type="file" id="audioFile" accept="audio/*">
+    <br><br>
+    <button id="sendBtn" disabled>Send to Server</button>
+
+    <div id="result">Waiting for server response...</div>
+</div>
+
+<script>
+    // Ensure this URL matches your FastAPI endpoint
+    const WS_URL = "ws://localhost:8000/transcription/ws/transcribe";
+    let socket;
+
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+    const sendBtn = document.getElementById('sendBtn');
+    const fileInput = document.getElementById('audioFile');
+
+    function connect() {
+        socket = new WebSocket(WS_URL);
+
+        socket.onopen = () => {
+            statusEl.innerText = "Status: Connected to Server";
+            statusEl.className = "online";
+            sendBtn.disabled = false;
+            console.log("WebSocket Connection Established");
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            // Updated to match your DB model 'duration_seconds'
+            resultEl.innerHTML = `<strong>Text:</strong> ${data.transcription_text}<br>` +
+                                 `<strong>Word Count:</strong> ${data.word_count}<br>` +
+                                 `<strong>Duration:</strong> ${data.duration_seconds} seconds`;
+        };
+
+        socket.onclose = () => {
+            statusEl.innerText = "Status: Disconnected. Retrying in 3s...";
+            statusEl.className = "offline";
+            sendBtn.disabled = true;
+            setTimeout(connect, 3000); 
+        };
+
+        socket.onerror = (error) => {
+            console.error("WebSocket Error: ", error);
+        };
+    }
+
+    sendBtn.onclick = async () => {
+        const file = fileInput.files[0];
+        if (!file) return alert("Please select an audio file first!");
+
+        resultEl.innerText = "Processing audio... Please wait.";
+        
+        try {
+            const buffer = await file.arrayBuffer();
+            socket.send(buffer); 
+        } catch (err) {
+            resultEl.innerText = "Error reading file: " + err.message;
+        }
+    };
+
+    connect();
+</script>
+
+</body>
+</html>
